@@ -1,0 +1,8 @@
+{
+    "urls":  [
+                 "https://docs.example.test/page"
+             ],
+    "fixtures":  {
+                     "https://docs.example.test/page":  "\u003chtml\u003e\u003ctitle\u003eEvidence Page\u003c/title\u003e\u003cp\u003eSaved body\u003c/p\u003e\u003c/html\u003e"
+                 }
+}
