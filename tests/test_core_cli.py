@@ -24,6 +24,21 @@ def test_missing_required_input_is_rejected():
         analyze({})
 
 
+def test_fixture_snapshot_and_url_validation(tmp_path):
+    url = "https://docs.python.org/3/"
+    report = analyze(
+        {
+            "urls": [url],
+            "fixtures": {url: "<title>Python docs</title>"},
+            "snapshot_dir": str(tmp_path),
+        }
+    )
+    snapshot = Path(report["captures"][0]["snapshot"])
+    assert snapshot.read_text(encoding="utf-8") == "<title>Python docs</title>"
+    with pytest.raises(ValueError, match="http or https"):
+        analyze({"urls": ["file:///private/manuscript.txt"]})
+
+
 def test_cli_json_and_output_safety(tmp_path, capsys):
     source = Path(__file__).parents[1] / "examples" / "sample.json"
     assert main([str(source), "--format", "json"]) == 0

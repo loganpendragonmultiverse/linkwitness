@@ -25,7 +25,7 @@ def _linkwitness(data: dict[str, Any]) -> dict[str, Any]:
         if not str(url).startswith(("http://", "https://")):
             raise ValueError("URLs must use http or https")
         fixture = data.get("fixtures", {}).get(url)
-        response = (
+        response: Any = (
             None
             if fixture is not None
             else urlopen(Request(url, headers={"User-Agent": "LinkWitness/1.0"}), timeout=20)
