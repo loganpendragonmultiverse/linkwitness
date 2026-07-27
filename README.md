@@ -2,27 +2,32 @@
 
 [![CI](https://github.com/loganpendragonmultiverse/linkwitness/actions/workflows/ci.yml/badge.svg)](https://github.com/loganpendragonmultiverse/linkwitness/actions/workflows/ci.yml)
 
-Capture redirect, metadata, content fingerprint, and optional snapshot evidence for supplied web links. The command runs locally, uses explicit UTF-8 JSON input, and produces deterministic JSON or Markdown reports without modifying the supplied source material.
+Create reviewable web-link evidence from explicit URLs or URLs extracted from saved text and Markdown documents. Version 1.1 records capture time, redirect history, response validators, metadata, content fingerprints, truncation, optional raw snapshots, batch errors, and changes from a previous capture.
 
 ## Three-minute start
 
 ```bash
 python -m pip install .
 linkwitness examples/sample.json
-linkwitness examples/sample.json --format json --output report.json
+linkwitness examples/sample.json --format json --output evidence.json
 ```
 
-The example documents the complete v1 input shape. Markdown is intended for immediate review; JSON preserves structured evidence for scripts and later comparison. An existing output file is never overwritten.
+Snapshots are opt-in and saved locally as a raw response plus a JSON metadata sidecar. Multiple URLs are deduplicated while preserving their first-seen order.
 
-## Privacy and platforms
+## Capture and safety model
 
-LinkWitness makes only the HTTP requests explicitly listed in the input. Snapshots are opt-in and saved locally.
-
-Python 3.10 or newer is supported on Windows, macOS, and Linux. The package has no runtime dependencies, telemetry, account, or hosted service.
+- Only explicit HTTP and HTTPS links are accepted.
+- Private, loopback, link-local, and reserved network targets are blocked by default.
+- Response size and timeout limits are configurable and truncation is explicit.
+- Redirect hops, final URL, status, content type, ETag, Last-Modified, title, description, canonical link, byte count, and SHA-256 are recorded where available.
+- Batch failures become evidence records by default; strict mode can stop at the first failure.
+- A previous report classifies links as new, changed, unchanged, missing, or failed.
 
 ## Interpretation boundary
 
-A capture proves what this client received at one moment, not authorship, long-term availability, or legal admissibility. JavaScript-rendered content is outside v1 scope.
+A capture proves what this client received at one recorded moment. It does not prove authorship, legal admissibility, long-term availability, or semantic equivalence. JavaScript rendering, authenticated browsing, and crawler-style discovery remain outside scope. Fixtures exist for deterministic tests and clearly identify themselves through supplied headers.
+
+Python 3.10 or newer is supported on Windows, macOS, and Linux with no runtime dependencies, telemetry, account, or hosted service.
 
 ## Development
 
@@ -34,7 +39,5 @@ mypy src
 pytest
 python -m build
 ```
-
-The project is feature-complete for its documented v1 scope. Maintenance focuses on correctness, security, compatibility, and well-supported input improvements.
 
 Part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Licensed under the [MIT License](LICENSE).

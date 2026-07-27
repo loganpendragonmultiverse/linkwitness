@@ -1,8 +1,10 @@
 {
-    "urls":  [
-                 "https://docs.example.test/page"
-             ],
-    "fixtures":  {
-                     "https://docs.example.test/page":  "\u003chtml\u003e\u003ctitle\u003eEvidence Page\u003c/title\u003e\u003cp\u003eSaved body\u003c/p\u003e\u003c/html\u003e"
-                 }
+  "captured_at": "2026-07-27T12:00:00+00:00",
+  "urls": ["https://docs.example.test/page"],
+  "fixtures": {
+    "https://docs.example.test/page": {
+      "body": "<html><title>Evidence Page</title><meta name=\"description\" content=\"Saved body\"><link rel=\"canonical\" href=\"/page\"><p>Saved body</p></html>",
+      "headers": {"Content-Type": "text/html", "ETag": "example-etag"}
+    }
+  }
 }
