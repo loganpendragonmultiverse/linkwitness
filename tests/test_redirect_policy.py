@@ -142,7 +142,7 @@ def test_rechecks_same_host_dns_on_relative_redirect(monkeypatch):
     assert resolutions == []
 
 
-@pytest.mark.parametrize("limit", [0, 1, 3, 12])
+@pytest.mark.parametrize("limit", [0, 1, 3, 12, 20])
 def test_total_hop_limit_bounds_unique_targets(monkeypatch, limit):
     urls = [f"https://public.test/{i}" for i in range(limit + 2)]
     requests, resolutions = mock_network(
@@ -156,7 +156,8 @@ def test_total_hop_limit_bounds_unique_targets(monkeypatch, limit):
     assert len(resolutions) == limit + 1
 
 
-def test_repeated_url_loop_is_bounded_and_allow_private_does_not_bypass_limit(monkeypatch):
+@pytest.mark.parametrize("limit", [3, 20])
+def test_repeated_url_loop_is_bounded_and_allow_private_does_not_bypass_limit(monkeypatch, limit):
     first, second = "http://127.0.0.1/a", "http://127.0.0.1/b"
     requests, resolutions = mock_network(
         monkeypatch,
@@ -167,12 +168,12 @@ def test_repeated_url_loop_is_bounded_and_allow_private_does_not_bypass_limit(mo
         {
             "urls": [first],
             "captured_at": NOW,
-            "max_redirects": 3,
+            "max_redirects": limit,
             "allow_private": True,
         }
     )
     assert "hop limit" in report["captures"][0]["error"]
-    assert requests == [first, second, first, second]
+    assert requests == [first if i % 2 == 0 else second for i in range(limit + 1)]
     assert resolutions == []
 
 
@@ -251,7 +252,7 @@ def test_rejected_redirect_closes_response(monkeypatch):
     assert response.closed
 
 
-@pytest.mark.parametrize("limit", [-1, True, 1.5, "3", None])
+@pytest.mark.parametrize("limit", [-1, 21, 10**100, True, 1.5, "3", None])
 def test_invalid_hop_limits_are_rejected_before_any_request(monkeypatch, limit):
     requests, resolutions = mock_network(monkeypatch, {}, {})
     with pytest.raises((ValueError, TypeError), match="max_redirects"):
@@ -291,3 +292,36 @@ def test_hop_limit_obeys_batch_and_strict_modes(monkeypatch, strict):
         report = core.analyze(data)
         assert report["summary"]["captured"] == report["summary"]["errors"] == 1
         assert requests == [start, good]
+
+
+def test_excessive_redirect_limit_is_rejected_before_requests(monkeypatch):
+    urls = [f"https://public.test/{i}" for i in range(10002)]
+    requests, resolutions = mock_network(
+        monkeypatch,
+        {url: (302, urls[i + 1]) for i, url in enumerate(urls[:-1])},
+        {"public.test": ["8.8.8.8"]},
+    )
+    with pytest.raises(ValueError, match="max_redirects"):
+        core.analyze({"urls": urls[:1], "max_redirects": 10000})
+    assert requests == [] and resolutions == []
+
+
+def test_twenty_redirects_complete_at_the_upper_bound(monkeypatch):
+    urls = [f"https://public.test/{i}" for i in range(21)]
+    routes = {url: (302, urls[i + 1]) for i, url in enumerate(urls[:-1])}
+    routes[urls[-1]] = (200, None)
+    requests, resolutions = mock_network(
+        monkeypatch,
+        routes,
+        {"public.test": ["8.8.8.8"]},
+    )
+    report = core.analyze({"urls": urls[:1], "captured_at": NOW, "max_redirects": 20})
+    assert report["summary"]["captured"] == 1
+    assert len(report["captures"][0]["redirects"]) == 20
+    assert requests == urls
+    assert len(resolutions) == 21
+
+
+def test_direct_handler_construction_also_rejects_excessive_limit():
+    with pytest.raises(ValueError, match="between 0 and 20"):
+        core._RedirectRecorder(max_redirects=10000)

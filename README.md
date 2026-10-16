@@ -45,9 +45,10 @@ Part of the [Logan Pendragon Forge open-source collection](https://www.loganpend
 ## Redirect policy and limits
 
 Network captures allow at most 10 redirect hops by default. Set `max_redirects`
-to a nonnegative integer in the JSON input to choose the total limit; `0`
+to an integer from 0 through 20 inclusive in the JSON input; `0`
 permits the initial request but follows no redirects. All followed redirects
-count, including repeated URLs in loops. Relative locations resolve against the
+count, including repeated URLs in loops. Because urllib follows redirects
+recursively, values outside 0–20 are rejected before DNS lookup or any request. Relative locations resolve against the
 current URL, then undergo the same HTTP/HTTPS and address checks before another
 request is opened. HTTP 308 support follows the installed Python urllib;
 Python 3.10 reports an unsupported 308 response without following it. Batch captures record a blocked target or exceeded limit as

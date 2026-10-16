@@ -25,3 +25,10 @@ Verify the bundled offline README example and package versions in fresh wheel
 and extracted-source installations. Compare packaged README, changelog,
 development and testing guidance with source. DNS checks are not proof of
 comprehensive SSRF prevention or control over transport resolution/proxies.
+
+## Upper-bound regression
+
+An in-memory chain with `max_redirects: 10000` reproduced an uncaught
+`RecursionError` before the fix. Reject that configuration before DNS or
+transport, accept exactly 20 successful hops, reject the next hop, and bound
+both distinct-target and repeated-target chains at the documented maximum.

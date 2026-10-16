@@ -15,6 +15,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 PROJECT = "linkwitness"
 SCHEMA_VERSION = 2
+MAX_REDIRECTS = 20
 URL_PATTERN = re.compile(r"https?://[^\s<>'\"\])}]+")
 
 
@@ -51,16 +52,24 @@ class _MetadataParser(HTMLParser):
             self.in_title = False
 
 
+def _redirect_limit(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError("max_redirects must be an integer")
+    if not 0 <= value <= MAX_REDIRECTS:
+        raise ValueError(f"max_redirects must be between 0 and {MAX_REDIRECTS}")
+    return value
+
+
 class _RedirectRecorder(HTTPRedirectHandler):
     def __init__(self, *, allow_private: bool = False, max_redirects: int = 10) -> None:
         super().__init__()
         self.chain: list[dict[str, Any]] = []
         self.allow_private = allow_private
-        self.max_redirects = max_redirects
+        self.max_redirects = _redirect_limit(max_redirects)
         # urllib reads these class defaults through each handler instance.
         # The total-hop counter below bounds repeated and distinct targets.
-        self.max_repeats = max_redirects + 1  # type: ignore[misc]
-        self.max_redirections = max_redirects + 1  # type: ignore[misc]
+        self.max_repeats = self.max_redirects + 1  # type: ignore[misc]
+        self.max_redirections = self.max_redirects + 1  # type: ignore[misc]
 
     def redirect_request(
         self,
@@ -210,11 +219,7 @@ def _linkwitness(data: dict[str, Any]) -> dict[str, Any]:
     timeout = float(data.get("timeout", 20))
     if max_bytes <= 0 or timeout <= 0:
         raise ValueError("max_bytes and timeout must be positive")
-    max_redirects = data.get("max_redirects", 10)
-    if isinstance(max_redirects, bool) or not isinstance(max_redirects, int):
-        raise TypeError("max_redirects must be an integer")
-    if max_redirects < 0:
-        raise ValueError("max_redirects must be nonnegative")
+    max_redirects = _redirect_limit(data.get("max_redirects", 10))
     captured_at = str(data.get("captured_at", datetime.now(timezone.utc).isoformat()))
     try:
         datetime.fromisoformat(captured_at.replace("Z", "+00:00"))

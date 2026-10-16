@@ -11,3 +11,7 @@ Validate resolved redirect URLs before following them and use one total-hop
 counter across repeated and distinct targets. Do not infer complete SSRF
 protection from hostname checks: transport DNS and proxy behavior remain
 outside this bounded policy. Tests use synthetic DNS and in-memory responses.
+
+The supported `max_redirects` range is 0 through 20, with default 10.
+Validate the range before any request and when constructing a redirect handler;
+do not raise urllib's recursive guards to an unbounded user value.

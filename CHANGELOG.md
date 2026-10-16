@@ -3,7 +3,7 @@
 ## 1.1.1 - 2026-10-16
 
 - Apply the existing private-target policy to every redirect before opening the next request, including relative redirects and mixed DNS answers.
-- Add a configurable total redirect-hop limit while preserving explicit private-target access and batch/strict behavior.
+- Add a configurable total redirect-hop limit from 0 through 20 (default 10), validated before requests to keep urllib recursion bounded while preserving explicit private-target access and batch/strict behavior.
 - Add mocked redirect regressions and document the DNS/transport policy boundary.
 
 ## 1.1.0 - 2026-07-27
