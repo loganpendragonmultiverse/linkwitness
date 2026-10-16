@@ -49,7 +49,8 @@ to a nonnegative integer in the JSON input to choose the total limit; `0`
 permits the initial request but follows no redirects. All followed redirects
 count, including repeated URLs in loops. Relative locations resolve against the
 current URL, then undergo the same HTTP/HTTPS and address checks before another
-request is opened. Batch captures record a blocked target or exceeded limit as
+request is opened. HTTP 308 support follows the installed Python urllib;
+Python 3.10 reports an unsupported 308 response without following it. Batch captures record a blocked target or exceeded limit as
 an error and continue; `continue_on_error: false` stops with a capture error.
 
 An explicit `allow_private: true` keeps its existing meaning for both the

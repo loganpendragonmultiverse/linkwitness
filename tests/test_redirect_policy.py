@@ -108,6 +108,11 @@ def test_relative_redirect_history_and_public_ipv6(monkeypatch, code):
         {"public.test": ["8.8.8.8"], "2001:4860:4860::8888": ["2001:4860:4860::8888"]},
     )
     item = core.analyze({"urls": [start], "captured_at": NOW, "max_redirects": 2})["captures"][0]
+    if code == 308 and not hasattr(core.HTTPRedirectHandler, "http_error_308"):
+        assert item["error"].startswith("HTTP Error 308")
+        assert requests == [start]
+        assert resolutions == ["public.test"]
+        return
     assert item["title"] == "Synthetic capture"
     assert item["final_url"] == final
     assert item["redirects"] == [
