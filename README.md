@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/loganpendragonmultiverse/linkwitness/actions/workflows/ci.yml/badge.svg)](https://github.com/loganpendragonmultiverse/linkwitness/actions/workflows/ci.yml)
 
-Create reviewable web-link evidence from explicit URLs or URLs extracted from saved text and Markdown documents. Version 1.1 records capture time, redirect history, response validators, metadata, content fingerprints, truncation, optional raw snapshots, batch errors, and changes from a previous capture.
+Create reviewable web-link evidence from explicit URLs or URLs extracted from saved text and Markdown documents. Version 1.1.1 records capture time, redirect history, response validators, metadata, content fingerprints, truncation, optional raw snapshots, batch errors, and changes from a previous capture.
 
 ## Three-minute start
 
@@ -17,7 +17,7 @@ Snapshots are opt-in and saved locally as a raw response plus a JSON metadata si
 ## Capture and safety model
 
 - Only explicit HTTP and HTTPS links are accepted.
-- Private, loopback, link-local, and reserved network targets are blocked by default.
+- The existing private, loopback, link-local, and reserved address policy is checked on the starting URL and before every HTTP redirect is followed. A mixed DNS answer is blocked if any returned address matches that policy.
 - Response size and timeout limits are configurable and truncation is explicit.
 - Redirect hops, final URL, status, content type, ETag, Last-Modified, title, description, canonical link, byte count, and SHA-256 are recorded where available.
 - Batch failures become evidence records by default; strict mode can stop at the first failure.
@@ -41,3 +41,26 @@ python -m build
 ```
 
 Part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Licensed under the [MIT License](LICENSE).
+
+## Redirect policy and limits
+
+Network captures allow at most 10 redirect hops by default. Set `max_redirects`
+to an integer from 0 through 20 inclusive in the JSON input; `0`
+permits the initial request but follows no redirects. All followed redirects
+count, including repeated URLs in loops. Because urllib follows redirects
+recursively, values outside 0–20 are rejected before DNS lookup or any request. Relative locations resolve against the
+current URL, then undergo the same HTTP/HTTPS and address checks before another
+request is opened. HTTP 308 support follows the installed Python urllib;
+Python 3.10 reports an unsupported 308 response without following it. Batch captures record a blocked target or exceeded limit as
+an error and continue; `continue_on_error: false` stops with a capture error.
+
+An explicit `allow_private: true` keeps its existing meaning for both the
+starting URL and redirects. It does not disable the HTTP/HTTPS restriction or
+the redirect limit. Offline `fixtures` perform no requests or DNS lookups;
+their supplied redirect metadata is not a network-policy verification.
+
+These checks inspect DNS answers before requests; the underlying HTTP transport
+can resolve the host again when connecting. They do not pin connection addresses,
+prevent DNS changes after a check, control proxy routing, or provide comprehensive
+SSRF protection. The tests exercise mocked address answers and redirects,
+including mixed IPv4/IPv6 answers. No private-network probes are used.
