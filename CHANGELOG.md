@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-10-16
+
+- Apply the existing private-target policy to every redirect before opening the next request, including relative redirects and mixed DNS answers.
+- Add a configurable total redirect-hop limit while preserving explicit private-target access and batch/strict behavior.
+- Add mocked redirect regressions and document the DNS/transport policy boundary.
+
 ## 1.1.0 - 2026-07-27
 
 - Added URL extraction from saved documents, normalized deduplication, capture timestamps, full redirect-chain records, selected response validators, HTML descriptions and canonical links, and configurable response-size and timeout limits.

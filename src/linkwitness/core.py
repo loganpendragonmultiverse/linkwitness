@@ -52,9 +52,15 @@ class _MetadataParser(HTMLParser):
 
 
 class _RedirectRecorder(HTTPRedirectHandler):
-    def __init__(self) -> None:
+    def __init__(self, *, allow_private: bool = False, max_redirects: int = 10) -> None:
         super().__init__()
         self.chain: list[dict[str, Any]] = []
+        self.allow_private = allow_private
+        self.max_redirects = max_redirects
+        # urllib reads these class defaults through each handler instance.
+        # The total-hop counter below bounds repeated and distinct targets.
+        self.max_repeats = max_redirects + 1  # type: ignore[misc]
+        self.max_redirections = max_redirects + 1  # type: ignore[misc]
 
     def redirect_request(
         self,
@@ -65,10 +71,24 @@ class _RedirectRecorder(HTTPRedirectHandler):
         headers: Any,
         newurl: str,
     ) -> Request | None:
-        self.chain.append(
-            {"status": code, "from": req.full_url, "to": urljoin(req.full_url, newurl)}
-        )
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+        target = urljoin(req.full_url, newurl)
+        try:
+            if len(self.chain) >= self.max_redirects:
+                raise ValueError(
+                    f"redirect hop limit exceeded (max_redirects={self.max_redirects})"
+                )
+            parsed = urlparse(target)
+            if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+                raise ValueError("redirect URLs must use http or https and include a host")
+            if not self.allow_private and _private_host(target):
+                raise ValueError("private or local network targets are blocked")
+            redirected = super().redirect_request(req, fp, code, msg, headers, target)
+        except (ValueError, HTTPError):
+            fp.close()
+            raise
+        if redirected is not None:
+            self.chain.append({"status": code, "from": req.full_url, "to": target})
+        return redirected
 
 
 def _urls(data: dict[str, Any]) -> list[str]:
@@ -126,10 +146,19 @@ def _fixture_capture(url: str, fixture: Any, max_bytes: int) -> tuple[bytes, dic
     }
 
 
-def _network_capture(url: str, timeout: float, max_bytes: int) -> tuple[bytes, dict[str, Any]]:
-    recorder = _RedirectRecorder()
+def _network_capture(
+    url: str,
+    timeout: float,
+    max_bytes: int,
+    *,
+    allow_private: bool = False,
+    max_redirects: int = 10,
+) -> tuple[bytes, dict[str, Any]]:
+    recorder = _RedirectRecorder(allow_private=allow_private, max_redirects=max_redirects)
     opener = build_opener(recorder)
-    response = opener.open(Request(url, headers={"User-Agent": "LinkWitness/1.1"}), timeout=timeout)
+    response = opener.open(
+        Request(url, headers={"User-Agent": "LinkWitness/1.1.1"}), timeout=timeout
+    )
     try:
         body = response.read(max_bytes + 1)
         headers = {str(k).lower(): str(v) for k, v in response.headers.items()}
@@ -181,6 +210,11 @@ def _linkwitness(data: dict[str, Any]) -> dict[str, Any]:
     timeout = float(data.get("timeout", 20))
     if max_bytes <= 0 or timeout <= 0:
         raise ValueError("max_bytes and timeout must be positive")
+    max_redirects = data.get("max_redirects", 10)
+    if isinstance(max_redirects, bool) or not isinstance(max_redirects, int):
+        raise TypeError("max_redirects must be an integer")
+    if max_redirects < 0:
+        raise ValueError("max_redirects must be nonnegative")
     captured_at = str(data.get("captured_at", datetime.now(timezone.utc).isoformat()))
     try:
         datetime.fromisoformat(captured_at.replace("Z", "+00:00"))
@@ -196,7 +230,13 @@ def _linkwitness(data: dict[str, Any]) -> dict[str, Any]:
             else:
                 if not allow_private and _private_host(url):
                     raise ValueError("private or local network targets are blocked")
-                body, response = _network_capture(url, timeout, max_bytes)
+                body, response = _network_capture(
+                    url,
+                    timeout,
+                    max_bytes,
+                    allow_private=allow_private,
+                    max_redirects=max_redirects,
+                )
             digest = hashlib.sha256(body).hexdigest()
             headers = response["headers"]
             content_type = headers.get("content-type", "")
