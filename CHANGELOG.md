@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1 — 2026-10-21
+
+- Require tag, package and runtime version identity before release builds.
+- Run complete quality checks and dependency audit in the pinned tag workflow.
+- Verify built wheel/source metadata and publish checksums over the exact payloads.
+- Preserve the previous public release, runtime behavior and native support matrix.
+
 ## 1.2.0 - 2026-10-21
 
 - Treat failed prior captures as unavailable comparison evidence, including contradictory legacy metadata.
