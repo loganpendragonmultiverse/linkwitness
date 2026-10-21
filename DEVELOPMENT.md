@@ -27,3 +27,7 @@ Each capture labels `capture_source` as `fixture` or `network` and whether its t
 Previous reports require an explicit captures array with unique requested URLs. Minimal legacy capture fragments remain supported. `unchanged` refers only to the captured byte prefix and final URL; it is not proof that a complete remote representation or its semantics remained unchanged. Each comparison states whether two explicitly untruncated representations were compared. HTML canonical relations are matched as tokens, and declared HTML charsets are respected when available. Markdown renders capture URLs/errors literally.
 
 The shipped offline sample is under `share/doc/linkwitness/examples/sample.json` in the installation prefix. Full release acceptance requires the original supported native matrix, CodeQL/build and the added dependency audit, then actual tag-built installed examples and distributions. No authentication, rendering engine or crawling is added.
+
+## 1.2.1: Release artifact verification
+
+The tag workflow checks that the stable tag, project metadata and runtime version agree before building. It runs the full existing quality suite and dependency audit, verifies wheel and source-distribution metadata, and writes SHA256SUMS from those exact two payloads. Native PR/main checks and independent installed-artifact acceptance remain required before publication. This maintenance release preserves runtime behavior and supported Python versions.
