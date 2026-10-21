@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 - 2026-10-21
+
+- Treat failed prior captures as unavailable comparison evidence, including contradictory legacy metadata.
+
+- Validate capture configuration and DNS answers without weakening private-target or redirect boundaries.
+- Bind immutable snapshot metadata to each capture and label fixture/network provenance.
+- Bound strict JSON/document inputs and preserve existing reports and evidence files.
+- Clarify truncated/legacy comparisons, improve HTML metadata parsing and render literal Markdown.
+- Add dependency audit coverage and official tag-built distribution checksums.
+
 ## 1.1.1 - 2026-10-16
 
 - Apply the existing private-target policy to every redirect before opening the next request, including relative redirects and mixed DNS answers.
